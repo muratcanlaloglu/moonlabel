@@ -19,9 +19,7 @@ This makes it easy to build datasets for object detection and other computer-vis
 
 ## Demo
 
-<p align="center">
-  <video src="frontend/src/assets/demo.mp4" width="600" controls></video>
-</p>
+https://github.com/user-attachments/assets/ced0beeb-9f2a-498e-b6fc-406efb16b17d
 
 ---
 
