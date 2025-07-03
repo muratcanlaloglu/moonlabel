@@ -86,8 +86,20 @@ async def detect(
 
 _frontend_dist = (Path(__file__).resolve().parents[2] / "frontend" / "dist").resolve()
 
+# Serve built static assets under /assets while letting SPA routing fall back to index.html.
 if _frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="static")
+    # JS/CSS chunks are under assets/, images etc.
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_frontend_dist / "assets")),
+        name="assets",
+    )
+    # Also serve other top-level files like favicon etc.
+    app.mount(
+        "/favicon.ico",
+        StaticFiles(directory=str(_frontend_dist)),
+        name="fav",
+    )
 else:
     # Avoid crashing in development when the frontend has not been built yet.
     import warnings
@@ -96,3 +108,22 @@ else:
         f"Frontend build directory not found at '{_frontend_dist}'. Static files will not be served.",
         RuntimeWarning,
     )
+
+# SPA fallback: serve index.html for any other route (except API routes)
+from fastapi.responses import FileResponse
+
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    """Return the built SPA's index.html for any unmatched path.
+
+    This allows React Router to handle client-side routing (e.g. /settings) while
+    keeping backend API paths functional.
+    """
+    if not _frontend_dist.exists():
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    index_file = _frontend_dist / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    raise HTTPException(status_code=404, detail="Not Found")
