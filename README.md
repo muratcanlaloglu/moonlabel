@@ -17,6 +17,12 @@ MoonLabel is a lightweight image-annotation tool that streamlines the process of
 
 This makes it easy to build datasets for object detection and other computer-vision research or application areas without setting up a heavy annotation pipeline.
 
+## Demo
+
+<p align="center">
+  <video src="frontend/src/assets/demo.mp4" width="600" controls></video>
+</p>
+
 ---
 
 ## Features
