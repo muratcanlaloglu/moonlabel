@@ -10,7 +10,7 @@ interface UploadAreaProps {
 
 export default function UploadArea({ onDetection, isProcessing }: UploadAreaProps) {
   const [isDragOver, setIsDragOver] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [objects, setObjects] = useState<string>('person')
   const [apiKey, setApiKey] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -38,17 +38,18 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
     setIsDragOver(false)
     
     const files = Array.from(e.dataTransfer.files)
-    const imageFile = files.find(file => file.type.startsWith('image/'))
+    const imageFiles = files.filter(file => file.type.startsWith('image/'))
     
-    if (imageFile) {
-      setSelectedFile(imageFile)
+    if (imageFiles.length > 0) {
+      setSelectedFiles(imageFiles)
     }
   }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
+    const files = e.target.files
+    if (files) {
+      const selectedFiles = Array.from(files)
+      setSelectedFiles(selectedFiles)
     }
   }, [])
 
@@ -57,14 +58,16 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
   }
 
   const handleDetect = async () => {
-    if (!selectedFile || !apiKey.trim()) return
+    if (selectedFiles.length === 0 || !apiKey.trim()) return
 
     const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
-    await onDetection(selectedFile, objectList, apiKey)
+    for (const file of selectedFiles) {
+      await onDetection(file, objectList, apiKey)
+    }
   }
 
   const resetSelection = () => {
-    setSelectedFile(null)
+    setSelectedFiles([])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -83,7 +86,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           className={`border-2 border-dashed rounded-lg p-12 text-center transition-all ${
             isDragOver
               ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-              : selectedFile
+              : selectedFiles.length > 0
               ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
               : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30'
           }`}
@@ -91,21 +94,21 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {selectedFile ? (
+          {selectedFiles.length > 0 ? (
             <div className="space-y-4">
               <div className="text-green-500 dark:text-green-400 text-4xl">✓</div>
               <div>
-                <p className="text-lg font-medium text-green-600 dark:text-green-400">File selected</p>
-                <p className="text-gray-800 dark:text-gray-300">{selectedFile.name}</p>
+                <p className="text-lg font-medium text-green-600 dark:text-green-400">Files selected</p>
+                <p className="text-gray-800 dark:text-gray-300">{selectedFiles.map(file => file.name).join(', ')}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {selectedFiles.reduce((total, file) => total + (file.size / 1024 / 1024), 0).toFixed(2)} MB
                 </p>
               </div>
               <button
                 onClick={resetSelection}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
               >
-                Choose different file
+                Choose different files
               </button>
             </div>
           ) : (
@@ -134,6 +137,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
+          multiple
         />
       </div>
 
@@ -164,9 +168,9 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
 
         <button
           onClick={handleDetect}
-          disabled={!selectedFile || !apiKey.trim() || isProcessing}
+          disabled={selectedFiles.length === 0 || !apiKey.trim() || isProcessing}
           className={`w-full py-3 rounded-lg font-medium transition-colors ${
-            selectedFile && apiKey.trim() && !isProcessing
+            selectedFiles.length > 0 && apiKey.trim() && !isProcessing
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
           }`}

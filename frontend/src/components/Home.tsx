@@ -13,41 +13,37 @@ interface Detection {
   height: number
 }
 
-interface DetectionResult {
-  detections: Detection[]
+interface ImageResult {
+  file: File; previewUrl: string; detections: Detection[];
 }
 
 export default function Home() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [results, setResults] = useState<DetectionResult | null>(null)
+  const [results, setResults] = useState<ImageResult[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const handleDetection = async (file: File, objects: string[], apiKey: string) => {
     setIsProcessing(true)
     setError(null)
-    setResults(null)
-
     try {
-      const formData = new FormData()
-      formData.append('image', file)
-      objects.forEach(obj => formData.append('objects', obj))
-      formData.append('api_key', apiKey)
+      const detectionsAccum: Detection[] = []
+      for (const label of objects) {
+        const formData = new FormData()
+        formData.append('image', file)
+        formData.append('objects', label)
+        formData.append('api_key', apiKey)
 
-      const response = await fetch('/api/detect', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Detection failed: ${response.statusText}`)
+        const response = await fetch('/api/detect', { method: 'POST', body: formData })
+        if (!response.ok) throw new Error(`Detection failed: ${response.statusText}`)
+        const data = await response.json()
+        detectionsAccum.push(...data.detections)
       }
-
-      const result = await response.json()
-      setResults(result)
+      const previewUrl = URL.createObjectURL(file)
+      setResults(prev => [...prev, { file, previewUrl, detections: detectionsAccum }])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Error')
     } finally {
       setIsProcessing(false)
     }
@@ -94,7 +90,7 @@ export default function Home() {
             </div>
           )}
 
-          {results && (
+          {results.length > 0 && (
             <ResultsPanel results={results} />
           )}
         </div>
