@@ -215,3 +215,5 @@ __marimo__/
 *.tiff
 *.ico
 *.webp
+
+frontend/package-lock.json
