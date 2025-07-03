@@ -13,6 +13,8 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [objects, setObjects] = useState<string>('person')
   const [apiKey, setApiKey] = useState<string>('')
+  const [detecting, setDetecting] = useState<boolean>(false)
+  const [progress, setProgress] = useState<{ processed: number; total: number }>({ processed: 0, total: 0 })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load API key from localStorage
@@ -61,9 +63,15 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
     if (selectedFiles.length === 0 || !apiKey.trim()) return
 
     const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
-    for (const file of selectedFiles) {
+    setDetecting(true)
+    setProgress({ processed: 0, total: selectedFiles.length })
+
+    for (const [idx, file] of selectedFiles.entries()) {
       await onDetection(file, objectList, apiKey)
+      setProgress({ processed: idx + 1, total: selectedFiles.length })
     }
+
+    setDetecting(false)
   }
 
   const resetSelection = () => {
@@ -168,15 +176,27 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
 
         <button
           onClick={handleDetect}
-          disabled={selectedFiles.length === 0 || !apiKey.trim() || isProcessing}
+          disabled={selectedFiles.length === 0 || !apiKey.trim() || detecting || isProcessing}
           className={`w-full py-3 rounded-lg font-medium transition-colors ${
-            selectedFiles.length > 0 && apiKey.trim() && !isProcessing
+            selectedFiles.length > 0 && apiKey.trim() && !detecting && !isProcessing
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
           }`}
         >
-          {isProcessing ? 'Processing...' : 'Detect Objects'}
+          {detecting || isProcessing
+            ? `Processing ${progress.processed}/${progress.total}`
+            : 'Detect Objects'}
         </button>
+
+        {/* Progress Bar */}
+        {detecting && (
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-4 overflow-hidden">
+            <div
+              className="bg-blue-600 h-full transition-all"
+              style={{ width: `${(progress.processed / progress.total) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

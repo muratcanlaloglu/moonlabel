@@ -23,9 +23,13 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
   // flatten detections
   const allDetections = results.flatMap(img => img.detections);
 
+  // Build mapping from label to YOLO class index and maintain ordered list of unique labels
+  const uniqueLabels = Array.from(new Set(allDetections.map(det => det.label)));
+  const labelToIndex: Record<string, number> = Object.fromEntries(uniqueLabels.map((lbl, idx) => [lbl, idx]));
+
   const copyToClipboard = async () => {
     const yoloContent = allDetections
-      .map(det => `0 ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
+      .map(det => `${labelToIndex[det.label]} ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
       .join('\n');
     try {
       await navigator.clipboard.writeText(yoloContent);
@@ -42,10 +46,22 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
       const base = img.file.name.replace(/\.[^.]+$/, '');
       imagesFolder?.file(img.file.name, img.file);
       const yoloLines = img.detections
-        .map(det => `0 ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
+        .map(det => `${labelToIndex[det.label]} ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
         .join('\n');
       labelsFolder?.file(`${base}.txt`, yoloLines);
     }
+    // Create data.yaml file for YOLO training
+    const yamlContent = [
+      'path: .',
+      'train: images',
+      'val: images',
+      'test: images',
+      '',
+      'names:',
+      ...uniqueLabels.map((lbl, idx) => `  ${idx}: ${lbl}`),
+    ].join('\n');
+
+    zip.file('data.yaml', yamlContent);
     const blob = await zip.generateAsync({ type: 'blob' });
     saveAs(blob, 'dataset.zip');
   };
