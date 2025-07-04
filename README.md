@@ -55,6 +55,10 @@ moonlabel/
 ## Quick Start with Docker
 
 ```bash
+# Clone the repository
+git clone https://github.com/muratcanlaloglu/moonlabel.git
+cd moonlabel
+
 # Build the image
 docker build -t moonlabel .
 
