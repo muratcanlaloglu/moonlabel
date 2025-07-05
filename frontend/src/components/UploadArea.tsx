@@ -13,16 +13,18 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [objects, setObjects] = useState<string>('person')
   const [apiKey, setApiKey] = useState<string>('')
+  const [mode, setMode] = useState<'cloud' | 'local'>('cloud')
   const [detecting, setDetecting] = useState<boolean>(false)
   const [progress, setProgress] = useState<{ processed: number; total: number }>({ processed: 0, total: 0 })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Load API key from localStorage
+  // Load API key and mode from localStorage
   useEffect(() => {
     const savedKey = localStorage.getItem('moondream_api_key')
-    if (savedKey) {
-      setApiKey(savedKey)
-    }
+    if (savedKey) setApiKey(savedKey)
+
+    const savedMode = localStorage.getItem('moondream_mode') as 'cloud' | 'local' | null
+    if (savedMode === 'local' || savedMode === 'cloud') setMode(savedMode)
   }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -60,14 +62,17 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
   }
 
   const handleDetect = async () => {
-    if (selectedFiles.length === 0 || !apiKey.trim()) return
+    if (selectedFiles.length === 0) return
+
+    if (mode === 'cloud' && !apiKey.trim()) return
 
     const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
     setDetecting(true)
     setProgress({ processed: 0, total: selectedFiles.length })
 
     for (const [idx, file] of selectedFiles.entries()) {
-      await onDetection(file, objectList, apiKey)
+      const keyToSend = mode === 'cloud' ? apiKey : ''
+      await onDetection(file, objectList, keyToSend)
       setProgress({ processed: idx + 1, total: selectedFiles.length })
     }
 
@@ -166,7 +171,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           />
         </div>
 
-        {!apiKey && (
+        {mode === 'cloud' && !apiKey && (
           <div className="bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
             <p className="text-yellow-800 dark:text-yellow-200 text-sm">
               ⚠️ No API key configured. Please go to <strong>Settings</strong> to add your API key.
@@ -174,11 +179,24 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           </div>
         )}
 
+        {mode === 'local' && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+            <p className="text-green-800 dark:text-green-200 text-sm">
+              🖥️ Using local Hugging Face model. Ensure the backend has downloaded it first use.
+            </p>
+          </div>
+        )}
+
         <button
           onClick={handleDetect}
-          disabled={selectedFiles.length === 0 || !apiKey.trim() || detecting || isProcessing}
+          disabled={
+            selectedFiles.length === 0 ||
+            (mode === 'cloud' && !apiKey.trim()) ||
+            detecting ||
+            isProcessing
+          }
           className={`w-full py-3 rounded-lg font-medium transition-colors ${
-            selectedFiles.length > 0 && apiKey.trim() && !detecting && !isProcessing
+            selectedFiles.length > 0 && (mode === 'local' || apiKey.trim()) && !detecting && !isProcessing
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
           }`}

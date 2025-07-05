@@ -6,23 +6,33 @@ export default function Settings() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const [apiKey, setApiKey] = useState('')
+  const [mode, setMode] = useState<'cloud' | 'local'>('cloud')
   const [showApiKey, setShowApiKey] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 
-  // Load saved API key from localStorage
+  // Load saved API key and mode from localStorage
   useEffect(() => {
     const savedKey = localStorage.getItem('moondream_api_key')
-    if (savedKey) {
-      setApiKey(savedKey)
-    }
+    if (savedKey) setApiKey(savedKey)
+
+    const savedMode = localStorage.getItem('moondream_mode') as 'cloud' | 'local' | null
+    if (savedMode === 'local' || savedMode === 'cloud') setMode(savedMode)
   }, [])
 
   const handleSaveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem('moondream_api_key', apiKey)
-      setIsSaved(true)
-      setTimeout(() => setIsSaved(false), 2000)
+    if (mode === 'cloud' && !apiKey.trim()) {
+      // Cloud requires key
+      return
     }
+
+    if (mode === 'cloud') {
+      localStorage.setItem('moondream_api_key', apiKey.trim())
+    }
+
+    localStorage.setItem('moondream_mode', mode)
+
+    setIsSaved(true)
+    setTimeout(() => setIsSaved(false), 2000)
   }
 
   const handleClearApiKey = () => {
@@ -59,14 +69,42 @@ export default function Settings() {
       <main className="p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           
-          {/* AI API Configuration */}
+          {/* AI Backend Configuration */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-              🔗 AI API Configuration
+              🔗 AI Backend Configuration
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Enter your Moondream API key to enable automatic annotation</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Select which backend to use for object detection and provide credentials if required.</p>
             
+            {/* Mode selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Backend Mode</label>
+              <div className="flex gap-4">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="backend-mode"
+                    value="cloud"
+                    checked={mode === 'cloud'}
+                    onChange={() => setMode('cloud')}
+                  />
+                  <span>Moondream Cloud</span>
+                </label>
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="backend-mode"
+                    value="local"
+                    checked={mode === 'local'}
+                    onChange={() => setMode('local')}
+                  />
+                  <span>Local (HuggingFace)</span>
+                </label>
+              </div>
+            </div>
+
             <div className="space-y-4">
+              {mode === 'cloud' && (
               <div>
                 <label className="block text-sm font-medium mb-2">
                   API Key
@@ -91,21 +129,22 @@ export default function Settings() {
                   Your API key is stored locally and never sent to our servers
                 </p>
               </div>
+              )}
 
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveApiKey}
-                  disabled={!apiKey.trim()}
+                  disabled={mode === 'cloud' && !apiKey.trim()}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    apiKey.trim()
+                    (mode === 'cloud' && apiKey.trim()) || mode === 'local'
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  💾 Save API Key
+                  💾 Save Settings
                 </button>
                 
-                {apiKey && (
+                {mode === 'cloud' && apiKey && (
                   <button
                     onClick={handleClearApiKey}
                     className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
@@ -116,7 +155,7 @@ export default function Settings() {
 
                 {isSaved && (
                   <div className="flex items-center text-green-600 dark:text-green-400 text-sm">
-                    ✅ API Key saved successfully!
+                    ✅ Settings saved successfully!
                   </div>
                 )}
               </div>

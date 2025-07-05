@@ -16,7 +16,7 @@ app = FastAPI()
 async def detect(
     image: UploadFile = File(...),
     objects: List[str] = Form(...),
-    api_key: str = Form(...),
+    api_key: Optional[str] = Form(None),
 ):
     """Detect *objects* in the uploaded *image* using the Moondream API.
 
@@ -26,8 +26,9 @@ async def detect(
         Image file to analyse.
     objects : List[str]
         List of object labels to look for.
-    api_key : str
-        API key for Moondream Cloud.
+    api_key : str | None
+        If provided, use Moondream Cloud with this key.  If omitted / empty,
+        the server falls back to the local HuggingFace model.
     """
 
     # Persist the uploaded image to a temporary file so that Pillow can reopen it inside
