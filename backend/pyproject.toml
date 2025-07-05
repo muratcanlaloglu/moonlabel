@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moonlabel-backend"
+version = "1.0.0"
+description = "FastAPI backend for the MoonLabel object-detection labelling tool"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Muratcan Laloğlu" }
+]
+
+dependencies = [
+  "fastapi[standard]",
+  "matplotlib",
+  "moondream",
+  "pydantic",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/muratcanlaloglu/moonlabel"
+"Source" = "https://github.com/muratcanlaloglu/moonlabel"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"] 
