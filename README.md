@@ -102,5 +102,5 @@ Below are planned enhancements and upcoming features. Contributions welcome!
 
 ## License
 
-This project is licensed under the terms of the MIT license. See [LICENSE](LICENSE) for details.
+This project is licensed under the terms of the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
