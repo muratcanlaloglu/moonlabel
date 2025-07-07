@@ -27,7 +27,8 @@ https://github.com/user-attachments/assets/ced0beeb-9f2a-498e-b6fc-406efb16b17d
 
 * 🌐 **API-driven backend** — FastAPI with automatic OpenAPI docs.
 * ⚛️ **Modern frontend** — React 19, TypeScript, TailwindCSS, Vite.
-* 🖼️ **Object detection** — Utilises the Moondream API and converts results to YOLO format.
+* 🖼️ **Object detection** — Choose between Moondream Cloud **or** the open-source Hugging Face model (Moondream 2).
+* ⚡ **GPU-accelerated & offline** — Local mode automatically uses CUDA / Apple Silicon (MPS) when available.
 * 🐳 **Docker-first** — Single-command build & run.
 
 ## Project Structure
@@ -48,7 +49,9 @@ moonlabel/
 
 * **Docker** ≥ 20.10 _(recommended)_
 * Otherwise: Node.js ≥ 20 & Python ≥ 3.11 if running without Docker.
-* **Moondream API key** — Sign up for a free key following the [Moondream Quickstart](https://moondream.ai/c/docs/quickstart) guide. You'll enter this key on the app's **Settings** page.
+* **PyTorch** – Installed automatically via `pip install -r backend/requirements.txt`.
+  * GPU users: make sure you have the matching CUDA runtime; Apple Silicon users need PyTorch ≥ 2.1 with MPS enabled.
+* **Moondream API key** _(Cloud mode only)_ — Sign up for a free key following the [Moondream Quickstart](https://moondream.ai/c/docs/quickstart) guide. You'll enter this key on the app's **Settings** page.
 
 ## Quick Start with Docker
 
@@ -66,6 +69,33 @@ docker run -p 8000:8000 moonlabel
 
 Visit http://localhost:8000 to open the web UI.
 
+## Local Mode (Hugging Face)
+
+The backend can run fully offline using the open-source [vikhyatk/moondream2](https://huggingface.co/vikhyatk/moondream2) checkpoint.
+
+1. Follow **Local Development → Backend** below to start the API.
+2. Open the **Settings** page in the UI and select **Local (Hugging Face)**.
+3. Click "Save Settings" (no API key required) and return to the Home page.
+
+The first detection will trigger a ~1 GB model download to `~/.cache/huggingface/` (one-off). Subsequent runs reuse the cached weights.
+
+### GPU / Device selection
+
+The backend chooses the best device automatically in the following order: CUDA → Apple Silicon (MPS) → CPU.
+
+Override via environment variable before launching the backend:
+
+```bash
+# Force GPU
+export MOONDREAM_DEVICE=cuda
+
+# Force Apple Silicon
+export MOONDREAM_DEVICE=mps
+
+# CPU only
+export MOONDREAM_DEVICE=cpu
+```
+
 ## Local Development
 
 ### Backend
@@ -80,13 +110,23 @@ uvicorn src.api:app --reload
 
 ### Frontend
 
+For **development** (fast HMR reloads):
+
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev  # Starts Vite dev server on http://localhost:5173
 ```
 
-The frontend dev server will proxy API requests to the backend at http://localhost:8000 by default.
+For a **production** build that's served by the backend:
+
+```bash
+cd frontend
+npm install  # if not done already
+npm run build  # Creates static files under frontend/dist
+```
+
+Restart the backend after building; `backend/src/api.py` automatically serves everything under `frontend/dist` at http://localhost:8000.
 
 ---
 
@@ -94,7 +134,8 @@ The frontend dev server will proxy API requests to the backend at http://localho
 
 Below are planned enhancements and upcoming features. Contributions welcome!
 
-- [ ] **Local Moondream support** – Run inference locally via Moondream Station (Mac/Linux) or direct Hugging Face Transformers.
+- [x] **Local Hugging Face model support** – Offline inference with optional GPU acceleration.
+- [ ] **Moondream Station integration** – Native Mac/Linux app support for on-device inference.
 - [ ] **Batch uploads** – Label multiple images in one go, with progress tracking.
 - [ ] **Additional export formats** – COCO JSON and Pascal VOC alongside YOLO.
 
