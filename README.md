@@ -77,7 +77,7 @@ The backend can run fully offline using the open-source [vikhyatk/moondream2](ht
 2. Open the **Settings** page in the UI and select **Local (Hugging Face)**.
 3. Click "Save Settings" (no API key required) and return to the Home page.
 
-The first detection will trigger a ~1 GB model download to `~/.cache/huggingface/` (one-off). Subsequent runs reuse the cached weights.
+The first detection will trigger a one-off model download to `~/.cache/huggingface/`; subsequent runs reuse the cached weights.
 
 ### GPU / Device selection
 

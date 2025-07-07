@@ -188,7 +188,7 @@ export default function Settings() {
                     <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">Option B: Local (Hugging Face)</h4>
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Runs the open-source <code>vikhyatk/moondream2</code> model directly on your machine.</p>
                     <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
-                      <li>• Works offline once the ~1 GB model is downloaded (first run).</li>
+                      <li>• Works offline once the model is downloaded (first run).</li>
                       <li>• Automatically uses GPU (CUDA) or Apple Silicon (MPS) if available.</li>
                       <li>• No API key required.</li>
                     </ul>
