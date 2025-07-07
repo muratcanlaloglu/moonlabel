@@ -185,16 +185,13 @@ export default function Settings() {
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-yellow-600 dark:text-yellow-400 mb-2">Option B: Local (WIP)</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Local Moondream support is currently under development.</p>
-                    <div className="bg-gray-200 dark:bg-gray-800 rounded p-3 border border-gray-300 dark:border-gray-600">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">🚧 Work in Progress</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Local support will include:</p>
-                      <ul className="text-xs text-gray-500 dark:text-gray-500 space-y-1 ml-4 mt-1">
-                        <li>• Mac/Linux Moondream Station integration</li>
-                        <li>• Direct Hugging Face transformers support</li>
-                      </ul>
-                    </div>
+                    <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">Option B: Local (Hugging Face)</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Runs the open-source <code>vikhyatk/moondream2</code> model directly on your machine.</p>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
+                      <li>• Works offline once the ~1 GB model is downloaded (first run).</li>
+                      <li>• Automatically uses GPU (CUDA) or Apple Silicon (MPS) if available.</li>
+                      <li>• No API key required.</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -202,14 +199,11 @@ export default function Settings() {
               {/* Coming Soon Notice */}
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-2 text-blue-700 dark:text-blue-300">🚀 Coming Soon</h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-2">Local Moondream support will be added in future updates:</p>
+                <p className="text-gray-700 dark:text-gray-300 mb-2">Planned future enhancements:</p>
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 ml-4">
-                  <li>• Moondream Local (Mac/Linux support)</li>
-                  <li>• Advanced Hugging Face integration</li>
+                  <li>• Moondream Station integration (native on-device inference for Mac/Linux)</li>
+                  <li>• Additional model choices & advanced settings</li>
                 </ul>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-3">
-                  For now, only <strong>Moondream Cloud</strong> is supported. Local support is in development.
-                </p>
               </div>
 
             </div>
