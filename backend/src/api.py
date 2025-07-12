@@ -17,6 +17,7 @@ async def detect(
     image: UploadFile = File(...),
     objects: List[str] = Form(...),
     api_key: Optional[str] = Form(None),
+    station_endpoint: Optional[str] = Form(None),
 ):
     """Detect *objects* in the uploaded *image* using the Moondream API.
 
@@ -28,6 +29,10 @@ async def detect(
         List of object labels to look for.
     api_key : str | None
         If provided, use Moondream Cloud with this key.  If omitted / empty,
+        the server falls back to the local HuggingFace model.
+    station_endpoint : str | None
+        If provided, use Moondream Station at this endpoint.
+        If both api_key and station_endpoint are omitted/empty,
         the server falls back to the local HuggingFace model.
     """
 
@@ -42,7 +47,7 @@ async def detect(
         raise HTTPException(status_code=400, detail=f"Failed to read image file: {exc}")
 
     # Perform inference
-    detector = MoonDreamInference(api_key=api_key)
+    detector = MoonDreamInference(api_key=api_key, station_endpoint=station_endpoint)
     image, detections = detector.detect(str(tmp_path), ",".join(objects))
 
     image_w, image_h = image.width, image.height

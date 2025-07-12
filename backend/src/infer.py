@@ -22,11 +22,15 @@ class MoonDreamInference:
       model stored in ``_HF_MODEL``.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, station_endpoint: Optional[str] = None):
         # Cloud path when a key is provided
         if api_key and api_key.strip():
             self.model = md.vl(api_key=api_key)
             self.source = "cloud"
+
+        elif station_endpoint and station_endpoint.strip():
+            self.model = md.vl(endpoint=station_endpoint)
+            self.source = "station"
         else:
             # Local HuggingFace model path
             global _HF_MODEL

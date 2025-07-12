@@ -24,7 +24,7 @@ export default function Home() {
   const [results, setResults] = useState<ImageResult[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const handleDetection = async (file: File, objects: string[], apiKey: string) => {
+  const handleDetection = async (file: File, objects: string[], apiKey: string, stationEndpoint?: string) => {
     setIsProcessing(true)
     setError(null)
     try {
@@ -34,6 +34,11 @@ export default function Home() {
         formData.append('image', file)
         formData.append('objects', label)
         formData.append('api_key', apiKey)
+        
+        // Add station endpoint if provided
+        if (stationEndpoint) {
+          formData.append('station_endpoint', stationEndpoint)
+        }
 
         const response = await fetch('/api/detect', { method: 'POST', body: formData })
         if (!response.ok) throw new Error(`Detection failed: ${response.statusText}`)

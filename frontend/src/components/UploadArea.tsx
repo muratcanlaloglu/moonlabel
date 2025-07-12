@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 
 
 interface UploadAreaProps {
-  onDetection: (file: File, objects: string[], apiKey: string) => Promise<void>
+  onDetection: (file: File, objects: string[], apiKey: string, stationEndpoint?: string) => Promise<void>
   isProcessing: boolean
 }
 
@@ -13,18 +13,24 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [objects, setObjects] = useState<string>('person')
   const [apiKey, setApiKey] = useState<string>('')
-  const [mode, setMode] = useState<'cloud' | 'local'>('cloud')
+  const [stationEndpoint, setStationEndpoint] = useState<string>('http://localhost:2020/v1')
+  const [mode, setMode] = useState<'cloud' | 'local' | 'station'>('cloud')
   const [detecting, setDetecting] = useState<boolean>(false)
   const [progress, setProgress] = useState<{ processed: number; total: number }>({ processed: 0, total: 0 })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Load API key and mode from localStorage
+  // Load API key, station endpoint, and mode from localStorage
   useEffect(() => {
     const savedKey = localStorage.getItem('moondream_api_key')
     if (savedKey) setApiKey(savedKey)
 
-    const savedMode = localStorage.getItem('moondream_mode') as 'cloud' | 'local' | null
-    if (savedMode === 'local' || savedMode === 'cloud') setMode(savedMode)
+    const savedEndpoint = localStorage.getItem('moondream_station_endpoint')
+    if (savedEndpoint) setStationEndpoint(savedEndpoint)
+
+    const savedMode = localStorage.getItem('moondream_mode') as 'cloud' | 'local' | 'station' | null
+    if (savedMode === 'local' || savedMode === 'cloud' || savedMode === 'station') {
+      setMode(savedMode)
+    }
   }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -65,6 +71,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
     if (selectedFiles.length === 0) return
 
     if (mode === 'cloud' && !apiKey.trim()) return
+    if (mode === 'station' && !stationEndpoint.trim()) return
 
     const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
     setDetecting(true)
@@ -72,7 +79,8 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
 
     for (const [idx, file] of selectedFiles.entries()) {
       const keyToSend = mode === 'cloud' ? apiKey : ''
-      await onDetection(file, objectList, keyToSend)
+      const endpointToSend = mode === 'station' ? stationEndpoint : undefined
+      await onDetection(file, objectList, keyToSend, endpointToSend)
       setProgress({ processed: idx + 1, total: selectedFiles.length })
     }
 
@@ -179,6 +187,22 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           </div>
         )}
 
+        {mode === 'station' && !stationEndpoint && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+            <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+              ⚠️ No station endpoint configured. Please go to <strong>Settings</strong> to configure your Moondream Station endpoint.
+            </p>
+          </div>
+        )}
+
+        {mode === 'station' && stationEndpoint && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <p className="text-blue-800 dark:text-blue-200 text-sm">
+              🚀 Using Moondream Station at {stationEndpoint}. Make sure your Station is running.
+            </p>
+          </div>
+        )}
+
         {mode === 'local' && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
             <p className="text-green-800 dark:text-green-200 text-sm">
@@ -192,11 +216,16 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           disabled={
             selectedFiles.length === 0 ||
             (mode === 'cloud' && !apiKey.trim()) ||
+            (mode === 'station' && !stationEndpoint.trim()) ||
             detecting ||
             isProcessing
           }
           className={`w-full py-3 rounded-lg font-medium transition-colors ${
-            selectedFiles.length > 0 && (mode === 'local' || apiKey.trim()) && !detecting && !isProcessing
+            selectedFiles.length > 0 && 
+            (mode === 'local' || 
+             (mode === 'cloud' && apiKey.trim()) || 
+             (mode === 'station' && stationEndpoint.trim())) && 
+            !detecting && !isProcessing
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
           }`}
