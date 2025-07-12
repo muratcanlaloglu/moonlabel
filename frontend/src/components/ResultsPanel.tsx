@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Detection {
   label: string
@@ -20,6 +21,8 @@ interface ResultsPanelProps {
 }
 
 export default function ResultsPanel({ results }: ResultsPanelProps) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  
   // flatten detections
   const allDetections = results.flatMap(img => img.detections);
 
@@ -27,14 +30,61 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
   const uniqueLabels = Array.from(new Set(allDetections.map(det => det.label)));
   const labelToIndex: Record<string, number> = Object.fromEntries(uniqueLabels.map((lbl, idx) => [lbl, idx]));
 
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (selectedImageIndex === null) return;
+    
+    switch (e.key) {
+      case 'Escape':
+        setSelectedImageIndex(null);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        setSelectedImageIndex(prev => prev === null ? null : prev > 0 ? prev - 1 : results.length - 1);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        setSelectedImageIndex(prev => prev === null ? null : prev < results.length - 1 ? prev + 1 : 0);
+        break;
+    }
+  }, [selectedImageIndex, results.length]);
+
+  // Add/remove keyboard event listeners
+  useEffect(() => {
+    if (selectedImageIndex !== null) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [handleKeyDown, selectedImageIndex]);
+
+  const openImageModal = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImageIndex(null);
+  };
+
+  const goToPrevious = () => {
+    setSelectedImageIndex(prev => prev === null ? null : prev > 0 ? prev - 1 : results.length - 1);
+  };
+
+  const goToNext = () => {
+    setSelectedImageIndex(prev => prev === null ? null : prev < results.length - 1 ? prev + 1 : 0);
+  };
+
   const copyToClipboard = async () => {
     const yoloContent = allDetections
       .map(det => `${labelToIndex[det.label]} ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
       .join('\n');
     try {
       await navigator.clipboard.writeText(yoloContent);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      /* Clipboard write failed – silent fail */
     }
   };
 
@@ -104,31 +154,119 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
       </div>
 
       {/* Image previews */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-wrap gap-6 items-start">
         {results.map((img, idx) => (
-          <div key={idx} className="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            <img src={img.previewUrl} alt={`preview-${idx}`} className="w-full object-cover" />
-            {/* Bounding boxes */}
-            {img.detections.map((det, i) => {
-              const left = (det.x_center - det.width / 2) * 100;
-              const top = (det.y_center - det.height / 2) * 100;
-              const width = det.width * 100;
-              const height = det.height * 100;
-              return (
-                <div
-                  key={i}
-                  className="absolute border-2 border-red-500"
-                  style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
-                >
-                  <span className="absolute top-0 left-0 bg-red-500 text-white text-xs px-1">
-                    {det.label}
-                  </span>
-                </div>
-              );
-            })}
+          <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-0.75rem)]">
+            <div
+              className="relative cursor-pointer w-full"
+              onClick={() => openImageModal(idx)}
+            >
+              <img
+                src={img.previewUrl}
+                alt={`preview-${idx}`}
+                className="w-full h-auto object-contain z-0"
+              />
+
+              {/* Bounding boxes, layered on top */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none z-10 bg-transparent">
+                {img.detections.map((det, i) => {
+                  const left = (det.x_center - det.width / 2) * 100;
+                  const top = (det.y_center - det.height / 2) * 100;
+                  const width = det.width * 100;
+                  const height = det.height * 100;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute border-2 border-red-500 pointer-events-none bg-transparent"
+                      style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+                    >
+                      <span className="absolute top-0 left-0 bg-red-500 text-white text-xs px-1">
+                        {det.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Image Modal */}
+      {selectedImageIndex !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center p-4">
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-2xl z-10"
+            >
+              ✕
+            </button>
+            
+            {/* Navigation buttons */}
+            {results.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrevious}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 text-3xl z-10"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={goToNext}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 text-3xl z-10"
+                >
+                  ›
+                </button>
+              </>
+            )}
+            
+            {/* Image with detections */}
+            <div className="relative max-w-full max-h-full">
+              <img 
+                src={results[selectedImageIndex].previewUrl} 
+                alt={`full-${selectedImageIndex}`} 
+                className="max-w-full max-h-full object-contain"
+              />
+              {/* Bounding boxes for modal */}
+              {results[selectedImageIndex].detections.map((det, i) => {
+                const left = (det.x_center - det.width / 2) * 100;
+                const top = (det.y_center - det.height / 2) * 100;
+                const width = det.width * 100;
+                const height = det.height * 100;
+                return (
+                  <div
+                    key={i}
+                    className="absolute border-2 border-red-500"
+                    style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+                  >
+                    <span className="absolute top-0 left-0 bg-red-500 text-white text-sm px-2 py-1">
+                      {det.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Image info */}
+            <div className="absolute bottom-4 left-4 text-white bg-black bg-opacity-50 px-3 py-2 rounded">
+              <div className="text-sm">
+                {results[selectedImageIndex].file.name}
+              </div>
+              <div className="text-xs opacity-75">
+                {selectedImageIndex + 1} of {results.length} • {results[selectedImageIndex].detections.length} detection{results[selectedImageIndex].detections.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+          
+          {/* Click outside to close */}
+          <div 
+            className="absolute inset-0 -z-10" 
+            onClick={closeImageModal}
+          />
+        </div>
+      )}
     </div>
   );
 } 
