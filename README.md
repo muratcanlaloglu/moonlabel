@@ -27,8 +27,8 @@ https://github.com/user-attachments/assets/ced0beeb-9f2a-498e-b6fc-406efb16b17d
 
 * 🌐 **API-driven backend** — FastAPI with automatic OpenAPI docs.
 * ⚛️ **Modern frontend** — React 19, TypeScript, TailwindCSS, Vite.
-* 🖼️ **Object detection** — Choose between Moondream Cloud **or** the open-source Hugging Face model (Moondream 2).
-* ⚡ **GPU-accelerated & offline** — Local mode automatically uses CUDA / Apple Silicon (MPS) when available.
+* 🖼️ **Object detection** — Choose between Moondream Cloud, the open-source Hugging Face model, or the native Moondream Station app.
+* ⚡ **GPU-accelerated & offline** — Local and Station modes automatically use available hardware acceleration (CUDA / MPS).
 * 🐳 **Docker-first** — Single-command build & run.
 
 ## Project Structure
@@ -52,6 +52,7 @@ moonlabel/
 * **PyTorch** – Installed automatically via `pip install -r backend/requirements.txt`.
   * GPU users: make sure you have the matching CUDA runtime; Apple Silicon users need PyTorch ≥ 2.1 with MPS enabled.
 * **Moondream API key** _(Cloud mode only)_ — Sign up for a free key following the [Moondream Quickstart](https://moondream.ai/c/docs/quickstart) guide. You'll enter this key on the app's **Settings** page.
+* **Moondream Station** _(Station mode only)_ - [Download and install](https://moondream.ai/station) the native app for Mac or Linux.
 
 ## Quick Start with Docker
 
@@ -68,6 +69,16 @@ docker run -p 8000:8000 moonlabel
 ```
 
 Visit http://localhost:8000 to open the web UI.
+
+## Moondream Station Mode
+
+The backend can connect to a running [Moondream Station](https://moondream.ai/station) instance for fast, native, on-device inference.
+
+1.  Download, install, and run Moondream Station.
+2.  Follow **Local Development → Backend** below to start the API.
+3.  Open the **Settings** page in the UI and select **Moondream Station**.
+4.  Ensure the endpoint matches your Station configuration (default: `http://localhost:2020/v1`).
+5.  Click "Save Settings" and return to the Home page.
 
 ## Local Mode (Hugging Face)
 
@@ -135,7 +146,7 @@ Restart the backend after building; `backend/src/api.py` automatically serves ev
 Below are planned enhancements and upcoming features. Contributions welcome!
 
 - [x] **Local Hugging Face model support** – Offline inference with optional GPU acceleration.
-- [ ] **Moondream Station integration** – Native Mac/Linux app support for on-device inference.
+- [x] **Moondream Station integration** – Native Mac/Linux app support for on-device inference.
 - [ ] **Batch uploads** – Label multiple images in one go, with progress tracking.
 - [ ] **Additional export formats** – COCO JSON and Pascal VOC alongside YOLO.
 
