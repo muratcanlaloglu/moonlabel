@@ -1,6 +1,6 @@
 <div align="center">
   <h1>MoonLabel</h1>
-  <img src="frontend/src/assets/moonlabellogo.png" alt="MoonLabel Logo" width="200" />
+  <img src="frontend/src/assets/moonlabellogo.svg" alt="MoonLabel Logo" width="200" />
   <p>An object-detection labelling tool.</p>
   <p><em>Powered by <a href="https://moondream.ai/">Moondream VLM</a></em></p>
 </div>

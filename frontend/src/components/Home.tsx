@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import UploadArea from './UploadArea'
 import ResultsPanel from './ResultsPanel'
-import logo from '../assets/moonlabellogo.png'
+import logo from '../assets/moonlabellogo.svg'
 
 interface Detection {
   label: string

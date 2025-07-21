@@ -219,4 +219,4 @@ __marimo__/
 frontend/package-lock.json
 
 # -- Allow project logo in README --
-!frontend/src/assets/moonlabellogo.png
+!frontend/src/assets/moonlabellogo.svg
