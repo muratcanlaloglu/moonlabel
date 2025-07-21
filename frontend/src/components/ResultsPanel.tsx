@@ -30,6 +30,17 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
   const uniqueLabels = Array.from(new Set(allDetections.map(det => det.label)));
   const labelToIndex: Record<string, number> = Object.fromEntries(uniqueLabels.map((lbl, idx) => [lbl, idx]));
 
+  // Color palette for different classes
+  const colors = [
+    '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#f97316',
+    '#14b8a6', '#06b6d4', '#84cc16', '#059669', '#7c3aed', '#d946ef', '#f43f5e', '#f59e0b'
+  ];
+
+  const getColorForLabel = (label: string) => {
+    const index = labelToIndex[label];
+    return colors[index % colors.length];
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (selectedImageIndex === null) return;
@@ -174,13 +185,23 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
                   const top = (det.y_center - det.height / 2) * 100;
                   const width = det.width * 100;
                   const height = det.height * 100;
+                  const color = getColorForLabel(det.label);
                   return (
                     <div
                       key={i}
-                      className="absolute border-2 border-red-500 pointer-events-none bg-transparent"
-                      style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+                      className="absolute border-2 pointer-events-none bg-transparent"
+                      style={{ 
+                        left: `${left}%`, 
+                        top: `${top}%`, 
+                        width: `${width}%`, 
+                        height: `${height}%`,
+                        borderColor: color
+                      }}
                     >
-                      <span className="absolute top-0 left-0 bg-red-500 text-white text-xs px-1">
+                      <span 
+                        className="absolute top-0 left-0 text-xs font-semibold px-1"
+                        style={{ color: color, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
+                      >
                         {det.label}
                       </span>
                     </div>
@@ -235,13 +256,23 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
                 const top = (det.y_center - det.height / 2) * 100;
                 const width = det.width * 100;
                 const height = det.height * 100;
+                const color = getColorForLabel(det.label);
                 return (
                   <div
                     key={i}
-                    className="absolute border-2 border-red-500"
-                    style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+                    className="absolute border-2"
+                    style={{ 
+                      left: `${left}%`, 
+                      top: `${top}%`, 
+                      width: `${width}%`, 
+                      height: `${height}%`,
+                      borderColor: color
+                    }}
                   >
-                    <span className="absolute top-0 left-0 bg-red-500 text-white text-sm px-2 py-1">
+                    <span 
+                      className="absolute top-0 left-0 text-sm font-semibold px-1"
+                      style={{ color: color, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
+                    >
                       {det.label}
                     </span>
                   </div>

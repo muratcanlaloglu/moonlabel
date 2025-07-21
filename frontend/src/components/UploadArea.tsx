@@ -220,7 +220,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
             detecting ||
             isProcessing
           }
-          className={`w-full py-3 rounded-lg font-medium transition-colors ${
+          className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
             selectedFiles.length > 0 && 
             (mode === 'local' || 
              (mode === 'cloud' && apiKey.trim()) || 
@@ -230,6 +230,9 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
               : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
           }`}
         >
+          {(detecting || isProcessing) && (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+          )}
           {detecting || isProcessing
             ? `Processing ${progress.processed}/${progress.total}`
             : 'Detect Objects'}
