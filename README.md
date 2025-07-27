@@ -147,7 +147,7 @@ Below are planned enhancements and upcoming features. Contributions welcome!
 
 - [x] **Local Hugging Face model support** – Offline inference with optional GPU acceleration.
 - [x] **Moondream Station integration** – Native Mac/Linux app support for on-device inference.
-- [ ] **Batch uploads** – Label multiple images in one go, with progress tracking.
+- [x] **Batch uploads** – Label multiple images in one go, with progress tracking.
 - [ ] **Additional export formats** – COCO JSON and Pascal VOC alongside YOLO.
 
 ---
