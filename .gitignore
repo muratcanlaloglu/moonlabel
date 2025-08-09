@@ -216,7 +216,9 @@ __marimo__/
 *.ico
 *.webp
 
-frontend/package-lock.json
+.DS_Store
+
+ui/package-lock.json
 
 # -- Allow project logo in README --
-!frontend/src/assets/moonlabellogo.svg
+!ui/src/assets/moonlabellogo.svg
