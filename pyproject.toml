@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moonlabel"
+version = "0.1.1"
+description = "Create object-detection datasets (YOLO) using Moondream"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Muratcan Laloğlu" }]
+
+dependencies = [
+  "moondream",
+  "Pillow",
+  "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+local = [
+  "transformers>=4.40.0",
+  "torch>=2.2.0",
+  "accelerate",
+  "einops",
+  "pyvips-binary",
+  "pyvips",
+]
+ui = [
+  "fastapi[standard]",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/muratcanlaloglu/moonlabel"
+"Source" = "https://github.com/muratcanlaloglu/moonlabel"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"moonlabel.server" = [
+  "static/*",
+  "static/**/*",
+]
+
+[project.scripts]
+moonlabel-ui = "moonlabel.server.cli:main"
+
+

@@ -1,0 +1,14 @@
+moondream
+pillow
+
+# for server
+fastapi[standard]
+
+
+# for local inference
+pyvips-binary 
+pyvips
+einops
+accelerate
+torch
+transformers
