@@ -18,7 +18,9 @@ Backends supported: Moondream Cloud, Moondream Station, or fully local (Hugging 
 
 ## Demo
 
-https://github.com/user-attachments/assets/ced0beeb-9f2a-498e-b6fc-406efb16b17d
+
+https://github.com/user-attachments/assets/a2dfc6b6-c83d-4296-986b-ac221e10fc3b
+
 
 ---
 
