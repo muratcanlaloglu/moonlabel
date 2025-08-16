@@ -3,6 +3,9 @@
   <img src="https://raw.githubusercontent.com/muratcanlaloglu/moonlabel/main/ui/src/assets/moonlabellogo.svg" alt="MoonLabel Logo" width="200" />
   <p>An object-detection labelling tool.</p>
   <p><em>Powered by <a href="https://moondream.ai/">Moondream VLM</a></em></p>
+  <p>
+    <a href="https://pypi.org/project/moonlabel/"><img src="https://img.shields.io/pypi/v/moonlabel.svg?logo=pypi" alt="PyPI version"></a>
+  </p>
 </div>
 
 ---
