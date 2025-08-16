@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -22,6 +21,7 @@ interface ResultsPanelProps {
 
 export default function ResultsPanel({ results }: ResultsPanelProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [exportFormat, setExportFormat] = useState<'yolo' | 'voc' | 'coco'>('yolo');
   
   // flatten detections
   const allDetections = results.flatMap(img => img.detections);
@@ -88,66 +88,63 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
     setSelectedImageIndex(prev => prev === null ? null : prev < results.length - 1 ? prev + 1 : 0);
   };
 
-  const copyToClipboard = async () => {
-    const yoloContent = allDetections
-      .map(det => `${labelToIndex[det.label]} ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
-      .join('\n');
-    try {
-      await navigator.clipboard.writeText(yoloContent);
-    } catch {
-      /* Clipboard write failed – silent fail */
-    }
-  };
+  // Copy-to-clipboard removed per request
 
   const downloadDataset = async () => {
-    const zip = new JSZip();
-    const imagesFolder = zip.folder('images');
-    const labelsFolder = zip.folder('labels');
-    for (const img of results) {
-      const base = img.file.name.replace(/\.[^.]+$/, '');
-      imagesFolder?.file(img.file.name, img.file);
-      const yoloLines = img.detections
-        .map(det => `${labelToIndex[det.label]} ${det.x_center} ${det.y_center} ${det.width} ${det.height}`)
-        .join('\n');
-      labelsFolder?.file(`${base}.txt`, yoloLines);
+    try {
+      const form = new FormData();
+      form.append('export_format', exportFormat);
+      const annMap: Record<string, any[]> = {};
+      for (const img of results) {
+        annMap[img.file.name] = img.detections.map(det => ({
+          label: det.label,
+          x_center: det.x_center,
+          y_center: det.y_center,
+          width: det.width,
+          height: det.height,
+        }));
+      }
+      form.append('annotations', JSON.stringify(annMap));
+      form.append('classes', JSON.stringify(uniqueLabels));
+      for (const img of results) {
+        form.append('images', img.file, img.file.name);
+      }
+      const res = await fetch('/api/export', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const blob = await res.blob();
+      saveAs(blob, 'dataset.zip');
+    } catch (err) {
+      alert('Export failed. Please try again.');
     }
-    // Create data.yaml file for YOLO training
-    const yamlContent = [
-      'path: .',
-      'train: images',
-      'val: images',
-      'test: images',
-      '',
-      'names:',
-      ...uniqueLabels.map((lbl, idx) => `  ${idx}: ${lbl}`),
-    ].join('\n');
-
-    zip.file('data.yaml', yamlContent);
-    const blob = await zip.generateAsync({ type: 'blob' });
-    saveAs(blob, 'dataset.zip');
   };
 
   return (
     <div className="mt-6 space-y-6">
       {/* Summary Card */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">
-            Detection Results ({allDetections.length} objects in {results.length} image{results.length!==1?'s':''})
-          </h3>
-          <div className="flex gap-2">
-            <button
-              onClick={copyToClipboard}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-sm transition-colors"
-            >📋 Copy</button>
-            <button
-              onClick={downloadDataset}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
-            >
-              📦 Download Dataset
-            </button>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">
+              Detection Results ({allDetections.length} objects in {results.length} image{results.length!==1?'s':''})
+            </h3>
+            <div className="flex gap-2">
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value as 'yolo' | 'voc' | 'coco')}
+                className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+                title="Export format"
+              >
+                <option value="yolo">YOLO</option>
+                <option value="voc">VOC</option>
+                <option value="coco">COCO</option>
+              </select>
+              <button
+                onClick={downloadDataset}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+              >
+              📦 Download {exportFormat.toUpperCase()}
+              </button>
+            </div>
           </div>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-600">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{results.length}</div>
