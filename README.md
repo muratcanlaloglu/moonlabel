@@ -11,8 +11,8 @@
 
 MoonLabel is both a Python library and a tiny web UI to generate object-detection datasets quickly.
 
-1. Use the library to auto-label folders of images and export YOLO.
-2. Or launch the UI and visually export YOLO with one click.
+1. Use the library to auto-label folders of images and export YOLO, COCO, or VOC.
+2. Or launch the UI and visually export YOLO/COCO/VOC with one click.
 
 Backends supported: Moondream Cloud, Moondream Station, or fully local (Hugging Face).
 
@@ -79,7 +79,23 @@ create_dataset("/path/to/images", objects=["car"], station_endpoint="http://loca
 create_dataset("/path/to/images", objects=["bottle"])  # no key needed
 ```
 
-This produces a YOLO dataset directory with `images/`, `labels/`, and `classes.txt`.
+By default this exports YOLO. Choose formats via `export_format`:
+
+```python
+# YOLO (default)
+create_dataset("/path/to/images", objects=["person"], export_format="yolo")
+
+# COCO
+create_dataset("/path/to/images", objects=["person", "car"], export_format="coco")
+
+# Pascal VOC
+create_dataset("/path/to/images", objects=["cat", "dog"], export_format="voc")
+```
+
+Output layouts:
+- YOLO: `images/`, `labels/`, `classes.txt`
+- COCO: `images/`, `annotations/instances.json`, `classes.txt`
+- VOC: `images/`, `annotations/*.xml`, `classes.txt`
 
 ## Moondream Station Mode
 
@@ -121,6 +137,11 @@ moonlabel/
 ├── src/moonlabel/             # Python package (library + server)
 │   ├── dataset.py             # create_dataset API
 │   ├── infer.py               # Moondream wrapper (cloud/station/local)
+│   ├── types.py               # shared types 
+│   ├── utils.py               # helpers 
+│   ├── yolo.py                # YOLO label writer
+│   ├── coco.py                # COCO writer
+│   ├── voc.py                 # Pascal VOC XML writer
 │   └── server/                # FastAPI app + static assets
 │       ├── api.py
 │       ├── cli.py             # moonlabel-ui entrypoint (port 8342)
@@ -141,11 +162,10 @@ Below are planned enhancements and upcoming features. Contributions welcome!
 - [x] **Local Hugging Face model support** – Offline inference with optional GPU acceleration.
 - [x] **Moondream Station integration** – Native Mac/Linux app support for on-device inference.
 - [x] **Batch uploads** – Label multiple images in one go, with progress tracking.
-- [ ] **Additional export formats** – COCO JSON and Pascal VOC alongside YOLO.
+- [x] **Additional export formats** – COCO JSON and Pascal VOC alongside YOLO.
 
 ---
 
 ## License
 
 This project is licensed under the terms of the Apache License 2.0. See [LICENSE](LICENSE) for details.
-
