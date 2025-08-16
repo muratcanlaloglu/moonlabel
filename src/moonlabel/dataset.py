@@ -7,6 +7,8 @@ from PIL import Image
 from .types import Detection, ExportFormat
 from .utils import iter_image_files, progress_iter
 from .yolo import write_yolo_labels
+from .voc import write_voc_annotation
+from .coco import CocoWriter
 
 
 def create_dataset(
@@ -22,7 +24,7 @@ def create_dataset(
 
     Parameters:
     - images_dir: Directory containing images to annotate.
-    - export_format: Currently only "yolo" is supported.
+    - export_format: yolo, voc, or coco.
     - output_dir: Output directory for images/labels (created if missing). If None, defaults under images_dir.
     - objects: Sequence of class names to prompt the model with; defaults to a generic "object".
     - api_key: API key for Moondream cloud inference.
@@ -42,13 +44,16 @@ def create_dataset(
         output_root = Path(output_dir).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
 
-    if export_format != "yolo":
-        raise ValueError("Only 'yolo' export_format is supported at the moment")
-
     images_out = output_root / "images"
-    labels_out = output_root / "labels"
     images_out.mkdir(exist_ok=True)
-    labels_out.mkdir(exist_ok=True)
+
+    # Prepare per-format outputs
+    labels_out = output_root / "labels"  # YOLO
+    annotations_out = output_root / "annotations"  # VOC XMLs or COCO JSON
+    if export_format == "yolo":
+        labels_out.mkdir(exist_ok=True)
+    else:
+        annotations_out.mkdir(exist_ok=True)
 
     # Lazy import to avoid pulling heavy deps at module import time
     from .infer import MoonDreamInference
@@ -57,6 +62,10 @@ def create_dataset(
     processed = 0
     labels_list: List[str] = list(objects) if objects else ["object"]
     class_to_id: dict[str, int] = {label: idx for idx, label in enumerate(labels_list)}
+
+    coco: CocoWriter | None = None
+    if export_format == "coco":
+        coco = CocoWriter()
     image_paths = list(iter_image_files(images_root))
     for img_path in progress_iter(image_paths, total=len(image_paths), desc="Creating dataset", enabled=show_progress):
         image = Image.open(img_path)
@@ -91,8 +100,21 @@ def create_dataset(
                     class_to_id[label] = len(labels_list)
                     labels_list.append(label)
 
-        txt_name = img_path.with_suffix(".txt").name
-        write_yolo_labels(labels_out / txt_name, detections, (width, height), class_to_id)
+        if export_format == "yolo":
+            txt_name = img_path.with_suffix(".txt").name
+            write_yolo_labels(labels_out / txt_name, detections, (width, height), class_to_id)
+        elif export_format == "voc":
+            depth = 4 if image.mode == "RGBA" else (3 if image.mode in {"RGB", "P"} else 1)
+            xml_name = img_path.with_suffix(".xml").name
+            write_voc_annotation(
+                annotations_out / xml_name,
+                img_path.name,
+                (width, height, depth),
+                detections,
+            )
+        elif export_format == "coco":
+            assert coco is not None
+            coco.add_image(img_path.name, (width, height), detections, class_to_id)
 
         target_img = images_out / img_path.name
         if not target_img.exists():
@@ -107,6 +129,10 @@ def create_dataset(
 
     if processed == 0:
         raise RuntimeError(f"No images found under {images_root}")
+
+    if export_format == "coco":
+        assert coco is not None
+        coco.write(annotations_out / "instances.json", class_to_id)
 
     classes_file = output_root / "classes.txt"
     with classes_file.open("w", encoding="utf-8") as f:

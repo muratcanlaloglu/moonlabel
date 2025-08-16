@@ -21,5 +21,5 @@ class Detection:
 
 
 # Supported export formats for dataset creation
-ExportFormat = Literal["yolo"]
+ExportFormat = Literal["yolo", "coco", "voc"]
 
