@@ -70,7 +70,7 @@ Choose backend in Settings:
 
 In the Home page:
 - Use the top toggle to select Detection or Caption dataset.
-- For Caption, choose length (short/medium/long) and generate/export.
+- For Caption, choose length (short/normal/long) and generate/export.
 
 ## Quick Start (Library)
 
@@ -101,8 +101,8 @@ create_dataset("/path/to/images", objects=["cat", "dog"], export_format="voc")
 
 # Image Captioning
 create_dataset("/path/to/images", export_format="caption")
-# With length (short|medium|long)
-create_dataset("/path/to/images", export_format="caption", caption_length="medium")
+# With length (short|normal|long)
+create_dataset("/path/to/images", export_format="caption", caption_length="normal")
 ```
 
 Output layouts:
