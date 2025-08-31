@@ -21,7 +21,8 @@ interface ResultsPanelProps {
 
 export default function ResultsPanel({ results }: ResultsPanelProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [exportFormat, setExportFormat] = useState<'yolo' | 'voc' | 'coco'>('yolo');
+  const [exportFormat, setExportFormat] = useState<'yolo' | 'voc' | 'coco' | 'caption'>('yolo');
+  const [captionLength, setCaptionLength] = useState<'short' | 'medium' | 'long'>('short');
   
   // flatten detections
   const allDetections = results.flatMap(img => img.detections);
@@ -94,18 +95,31 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
     try {
       const form = new FormData();
       form.append('export_format', exportFormat);
-      const annMap: Record<string, any[]> = {};
-      for (const img of results) {
-        annMap[img.file.name] = img.detections.map(det => ({
-          label: det.label,
-          x_center: det.x_center,
-          y_center: det.y_center,
-          width: det.width,
-          height: det.height,
-        }));
+
+      if (exportFormat === 'caption') {
+        form.append('caption_length', captionLength);
+        // Pass backend settings if present
+        const apiKey = localStorage.getItem('moondream_api_key') || '';
+        const stationEndpoint = localStorage.getItem('moondream_station_endpoint') || '';
+        if (apiKey) form.append('api_key', apiKey);
+        if (stationEndpoint) form.append('station_endpoint', stationEndpoint);
+        // annotations/classes ignored for caption, but provide empty to be safe
+        form.append('annotations', JSON.stringify({}));
+      } else {
+        type YoloAnn = { label: string; x_center: number; y_center: number; width: number; height: number };
+        const annMap: Record<string, YoloAnn[]> = {};
+        for (const img of results) {
+          annMap[img.file.name] = img.detections.map(det => ({
+            label: det.label,
+            x_center: det.x_center,
+            y_center: det.y_center,
+            width: det.width,
+            height: det.height,
+          }));
+        }
+        form.append('annotations', JSON.stringify(annMap));
+        form.append('classes', JSON.stringify(uniqueLabels));
       }
-      form.append('annotations', JSON.stringify(annMap));
-      form.append('classes', JSON.stringify(uniqueLabels));
       for (const img of results) {
         form.append('images', img.file, img.file.name);
       }
@@ -114,6 +128,9 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
       const blob = await res.blob();
       saveAs(blob, 'dataset.zip');
     } catch (err) {
+      // Log to help debugging and satisfy no-unused-vars
+      // eslint-disable-next-line no-console
+      console.error(err);
       alert('Export failed. Please try again.');
     }
   };
@@ -127,16 +144,31 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
               Detection Results ({allDetections.length} objects in {results.length} image{results.length!==1?'s':''})
             </h3>
             <div className="flex gap-2">
-              <select
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value as 'yolo' | 'voc' | 'coco')}
-                className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
-                title="Export format"
-              >
-                <option value="yolo">YOLO</option>
-                <option value="voc">VOC</option>
-                <option value="coco">COCO</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <select
+                  value={exportFormat}
+                  onChange={(e) => setExportFormat(e.target.value as 'yolo' | 'voc' | 'coco' | 'caption')}
+                  className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+                  title="Export format"
+                >
+                  <option value="yolo">YOLO</option>
+                  <option value="voc">VOC</option>
+                  <option value="coco">COCO</option>
+                  <option value="caption">Caption</option>
+                </select>
+                {exportFormat === 'caption' && (
+                  <select
+                    value={captionLength}
+                    onChange={(e) => setCaptionLength(e.target.value as 'short' | 'medium' | 'long')}
+                    className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+                    title="Caption length"
+                  >
+                    <option value="short">Short</option>
+                    <option value="medium">Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+                )}
+              </div>
               <button
                 onClick={downloadDataset}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"

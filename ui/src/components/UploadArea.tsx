@@ -1,14 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-
-
-
+import type { ReactNode } from 'react'
 
 interface UploadAreaProps {
-  onDetection: (file: File, objects: string[], apiKey: string, stationEndpoint?: string) => Promise<void>
+  variant?: 'detect' | 'caption'
+  onDetection?: (file: File, objects: string[], apiKey: string, stationEndpoint?: string) => Promise<void>
+  onCaption?: (file: File, apiKey: string, stationEndpoint?: string) => Promise<void>
   isProcessing: boolean
+  actionLabel?: string
+  extraControls?: ReactNode
 }
 
-export default function UploadArea({ onDetection, isProcessing }: UploadAreaProps) {
+export default function UploadArea({ variant = 'detect', onDetection, onCaption, isProcessing, actionLabel, extraControls }: UploadAreaProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [objects, setObjects] = useState<string>('person')
@@ -67,21 +69,28 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
     fileInputRef.current?.click()
   }
 
-  const handleDetect = async () => {
+  const handleAction = async () => {
     if (selectedFiles.length === 0) return
 
     if (mode === 'cloud' && !apiKey.trim()) return
     if (mode === 'station' && !stationEndpoint.trim()) return
 
-    const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
     setDetecting(true)
     setProgress({ processed: 0, total: selectedFiles.length })
 
     for (const [idx, file] of selectedFiles.entries()) {
       const keyToSend = mode === 'cloud' ? apiKey : ''
       const endpointToSend = mode === 'station' ? stationEndpoint : undefined
-      await onDetection(file, objectList, keyToSend, endpointToSend)
-      setProgress({ processed: idx + 1, total: selectedFiles.length })
+      try {
+        if (variant === 'detect') {
+          const objectList = objects.split(',').map(s => s.trim()).filter(s => s)
+          if (onDetection) await onDetection(file, objectList, keyToSend, endpointToSend)
+        } else {
+          if (onCaption) await onCaption(file, keyToSend, endpointToSend)
+        }
+      } finally {
+        setProgress({ processed: idx + 1, total: selectedFiles.length })
+      }
     }
 
     setDetecting(false)
@@ -164,20 +173,24 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
 
       {/* Configuration Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 space-y-4 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold">Detection Configuration</h3>
+        <h3 className="text-lg font-semibold">{variant === 'detect' ? 'Detection Configuration' : 'Caption Configuration'}</h3>
         
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Objects to detect (comma-separated)
-          </label>
-          <input
-            type="text"
-            value={objects}
-            onChange={(e) => setObjects(e.target.value)}
-            placeholder="person, car, dog"
-            className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-400 text-gray-900 dark:text-white"
-          />
-        </div>
+        {variant === 'detect' && (
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Objects to detect (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={objects}
+              onChange={(e) => setObjects(e.target.value)}
+              placeholder="person, car, dog"
+              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-400 text-gray-900 dark:text-white"
+            />
+          </div>
+        )}
+
+        {extraControls}
 
         {mode === 'cloud' && !apiKey && (
           <div className="bg-yellow-50 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
@@ -212,7 +225,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
         )}
 
         <button
-          onClick={handleDetect}
+          onClick={handleAction}
           disabled={
             selectedFiles.length === 0 ||
             (mode === 'cloud' && !apiKey.trim()) ||
@@ -235,7 +248,7 @@ export default function UploadArea({ onDetection, isProcessing }: UploadAreaProp
           )}
           {detecting || isProcessing
             ? `Processing ${progress.processed}/${progress.total}`
-            : 'Detect Objects'}
+            : (actionLabel || (variant === 'detect' ? 'Detect Objects' : 'Generate Captions'))}
         </button>
 
         {/* Progress Bar */}

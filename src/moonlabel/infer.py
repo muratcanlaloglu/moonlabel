@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
+import moondream as md
+from PIL import Image
+
 """Inference utilities for MoonLabel.
 
 This module encapsulates the logic to run object detection via the
@@ -13,10 +18,7 @@ The class exposes a minimal `detect` API returning a PIL image and a
 list of detection dictionaries produced by the underlying model.
 """
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
 
-import moondream as md
-from PIL import Image
 
 _HF_MODEL = None
 
@@ -96,3 +98,30 @@ class MoonDreamInference:
         detections = result.get("objects", [])
         return image, detections
 
+    def caption(self, image_path: str, length: str = "short") -> Tuple[Image.Image, str]:
+        """Generate a caption for an image.
+
+        Handles SDKs that may return streaming/generator captions by
+        materializing them into a single string.
+        """
+        image = Image.open(image_path)
+        # Moondream caption API: caption(image, length="short")
+        result = self.model.caption(image, length=length)
+        # Result is expected to be a dict like {"caption": <str or generator>}
+        cap = ""
+        try:
+            cap = result.get("caption", "")  # type: ignore[assignment]
+        except AttributeError:
+            # Some SDKs may return the caption directly
+            cap = result  # type: ignore[assignment]
+
+        if isinstance(cap, str):
+            text = cap
+        else:
+            # Try to join iterable/generator outputs
+            try:
+                text = "".join(part for part in cap)
+            except Exception:
+                text = str(cap)
+
+        return image, text

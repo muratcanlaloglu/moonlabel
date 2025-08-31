@@ -18,6 +18,32 @@ from PIL import Image
 app = FastAPI()
 
 
+@app.post("/api/caption")
+async def caption(
+    image: UploadFile = File(...),
+    api_key: Optional[str] = Form(None),
+    station_endpoint: Optional[str] = Form(None),
+    caption_length: Optional[str] = Form("short"),
+):
+    try:
+        suffix = Path(image.filename).suffix or ".jpg"
+        with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await image.read())
+            tmp_path = Path(tmp.name)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read image file: {exc}")
+
+    try:
+        infer = MoonDreamInference(api_key=api_key, station_endpoint=station_endpoint)
+        _, cap = infer.caption(str(tmp_path), length=caption_length or "short")
+    finally:
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    return {"caption": cap}
+
 @app.post("/api/detect")
 async def detect(
     image: UploadFile = File(...),
@@ -66,40 +92,50 @@ async def detect(
 
 @app.post("/api/export")
 async def export_dataset(
-    export_format: str = Form(...),  # 'yolo' | 'voc' | 'coco'
-    annotations: str = Form(...),  # JSON: { filename: [{label,x_center,y_center,width,height}, ...] }
-    classes: str | None = Form(None),  # JSON: ["class1", "class2", ...]
+    export_format: str = Form(...),  # 'yolo' | 'voc' | 'coco' | 'caption'
+    annotations: str | None = Form(None),  # JSON: { filename: [...]} (ignored for caption)
+    classes: str | None = Form(None),  # JSON: ["class1", ...] (ignored for caption)
     images: list[UploadFile] = File(...),
+    api_key: Optional[str] = Form(None),
+    station_endpoint: Optional[str] = Form(None),
+    caption_length: Optional[str] = Form("short"),
 ):
     # Validate format
-    if export_format not in {"yolo", "voc", "coco"}:
-        raise HTTPException(status_code=400, detail="Invalid export_format; expected yolo|voc|coco")
+    if export_format not in {"yolo", "voc", "coco", "caption"}:
+        raise HTTPException(status_code=400, detail="Invalid export_format; expected yolo|voc|coco|caption")
 
-    try:
-        ann_map = json.loads(annotations or "{}")
-        if not isinstance(ann_map, dict):
-            raise ValueError("annotations must be a JSON object")
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid annotations JSON: {exc}")
-
-    if classes:
+    # Parse annotations unless caption export
+    if export_format != "caption":
         try:
-            class_list = json.loads(classes)
-            if not isinstance(class_list, list):
-                raise ValueError("classes must be a JSON array")
-            class_list = [str(x) for x in class_list]
+            ann_map = json.loads(annotations or "{}")
+            if not isinstance(ann_map, dict):
+                raise ValueError("annotations must be a JSON object")
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=f"Invalid classes JSON: {exc}")
+            raise HTTPException(status_code=400, detail=f"Invalid annotations JSON: {exc}")
     else:
-        # derive from annotations order of first occurrence
-        seen = []
-        for v in ann_map.values():
-            if isinstance(v, list):
-                for det in v:
-                    lbl = str(det.get("label", "object"))
-                    if lbl not in seen:
-                        seen.append(lbl)
-        class_list = seen or ["object"]
+        ann_map = {}
+
+    if export_format != "caption":
+        if classes:
+            try:
+                class_list = json.loads(classes)
+                if not isinstance(class_list, list):
+                    raise ValueError("classes must be a JSON array")
+                class_list = [str(x) for x in class_list]
+            except Exception as exc:
+                raise HTTPException(status_code=400, detail=f"Invalid classes JSON: {exc}")
+        else:
+            # derive from annotations order of first occurrence
+            seen = []
+            for v in ann_map.values():
+                if isinstance(v, list):
+                    for det in v:
+                        lbl = str(det.get("label", "object"))
+                        if lbl not in seen:
+                            seen.append(lbl)
+            class_list = seen or ["object"]
+    else:
+        class_list = []
 
     label_to_index = {lbl: idx for idx, lbl in enumerate(class_list)}
 
@@ -203,7 +239,7 @@ async def export_dataset(
                 parts.append("</annotation>")
                 zf.writestr(f"annotations/{base}.xml", "".join(parts))
 
-        else:  # coco
+        elif export_format == "coco":  # coco
             images_json: list[dict] = []
             annotations_json: list[dict] = []
             next_image_id = 1
@@ -243,9 +279,31 @@ async def export_dataset(
             categories = [{"id": idx + 1, "name": name} for idx, name in enumerate(class_list)]
             instances = {"images": images_json, "annotations": annotations_json, "categories": categories}
             zf.writestr("annotations/instances.json", json.dumps(instances, indent=2))
+        else:  # caption
+            # Generate captions with inference backend
+            from ..infer import MoonDreamInference
+            captions: list[str] = []
+            entries: list[str] = []
+            infer = MoonDreamInference(api_key=api_key, station_endpoint=station_endpoint)
+            for name, blob in image_blobs.items():
+                # Write to a temp file to reuse existing interface
+                try:
+                    with NamedTemporaryFile(delete=False, suffix=Path(name).suffix or ".jpg") as tmp:
+                        tmp.write(blob)
+                        tmp_path = Path(tmp.name)
+                    try:
+                        _, cap = infer.caption(str(tmp_path), length=caption_length or "short")
+                    finally:
+                        tmp_path.unlink(missing_ok=True)
+                except Exception:
+                    cap = ""
+                entry = json.dumps({"image": name, "caption": cap}, ensure_ascii=False)
+                entries.append(entry)
+            zf.writestr("annotations/captions.jsonl", "\n".join(entries))
 
-        # common classes file
-        zf.writestr("classes.txt", "\n".join(class_list))
+        # common classes file (skip for caption)
+        if export_format != "caption":
+            zf.writestr("classes.txt", "\n".join(class_list))
 
     buf.seek(0)
     return Response(
@@ -292,4 +350,3 @@ async def spa_fallback(full_path: str):
     if index_file.exists():
         return FileResponse(index_file)
     raise HTTPException(status_code=404, detail="Not Found")
-

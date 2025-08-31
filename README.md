@@ -1,7 +1,7 @@
 <div align="center">
   <h1>MoonLabel</h1>
   <img src="https://raw.githubusercontent.com/muratcanlaloglu/moonlabel/main/ui/src/assets/moonlabellogo.svg" alt="MoonLabel Logo" width="200" />
-  <p>An object-detection labelling tool.</p>
+  <p>An object-detection and image-caption dataset tool.</p>
   <p><em>Powered by <a href="https://moondream.ai/">Moondream VLM</a></em></p>
   <p>
     <a href="https://pypi.org/project/moonlabel/"><img src="https://img.shields.io/pypi/v/moonlabel.svg?logo=pypi" alt="PyPI version"></a>
@@ -12,10 +12,10 @@
 
 ## Overview
 
-MoonLabel is both a Python library and a tiny web UI to generate object-detection datasets quickly.
+MoonLabel is both a Python library and a tiny web UI to generate object-detection and image-caption datasets quickly.
 
-1. Use the library to auto-label folders of images and export YOLO, COCO, or VOC.
-2. Or launch the UI and visually export YOLO/COCO/VOC with one click.
+1. Use the library to auto-label folders of images and export YOLO, COCO, VOC, or Captions.
+2. Or launch the UI, switch between Detection/Caption, and export with one click.
 
 Backends supported: Moondream Cloud, Moondream Station, or fully local (Hugging Face).
 
@@ -33,6 +33,7 @@ https://github.com/user-attachments/assets/a2dfc6b6-c83d-4296-986b-ac221e10fc3b
 * 🌐 **FastAPI server** — Served by a single `moonlabel-ui` command.
 * ⚛️ **Modern frontend** — React, TypeScript, TailwindCSS, Vite.
 * 🖼️ **Object detection** — Choose between Moondream Cloud, the open-source Hugging Face model, or the native Moondream Station app.
+* 📝 **Image caption datasets** — Export captions as `captions.jsonl` alongside images.
 * ⚡ **GPU-accelerated & offline** — Local and Station modes automatically use available hardware acceleration (CUDA / MPS).
 
 
@@ -67,6 +68,10 @@ Choose backend in Settings:
 - Moondream Station: set endpoint (default http://localhost:2020/v1)
 - Local (Hugging Face): install local extras and select Local
 
+In the Home page:
+- Use the top toggle to select Detection or Caption dataset.
+- For Caption, choose length (short/medium/long) and generate/export.
+
 ## Quick Start (Library)
 
 ```bash
@@ -93,12 +98,18 @@ create_dataset("/path/to/images", objects=["person", "car"], export_format="coco
 
 # Pascal VOC
 create_dataset("/path/to/images", objects=["cat", "dog"], export_format="voc")
+
+# Image Captioning
+create_dataset("/path/to/images", export_format="caption")
+# With length (short|medium|long)
+create_dataset("/path/to/images", export_format="caption", caption_length="medium")
 ```
 
 Output layouts:
 - YOLO: `images/`, `labels/`, `classes.txt`
 - COCO: `images/`, `annotations/instances.json`, `classes.txt`
 - VOC: `images/`, `annotations/*.xml`, `classes.txt`
+- Caption: `images/`, `annotations/captions.jsonl`
 
 ## Moondream Station Mode
 
