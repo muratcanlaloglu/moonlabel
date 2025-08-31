@@ -22,7 +22,7 @@ interface ResultsPanelProps {
 export default function ResultsPanel({ results }: ResultsPanelProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [exportFormat, setExportFormat] = useState<'yolo' | 'voc' | 'coco' | 'caption'>('yolo');
-  const [captionLength, setCaptionLength] = useState<'short' | 'medium' | 'long'>('short');
+  const [captionLength, setCaptionLength] = useState<'short' | 'normal' | 'long'>('short');
   
   // flatten detections
   const allDetections = results.flatMap(img => img.detections);
@@ -159,12 +159,12 @@ export default function ResultsPanel({ results }: ResultsPanelProps) {
                 {exportFormat === 'caption' && (
                   <select
                     value={captionLength}
-                    onChange={(e) => setCaptionLength(e.target.value as 'short' | 'medium' | 'long')}
+                    onChange={(e) => setCaptionLength(e.target.value as 'short' | 'normal' | 'long')}
                     className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                     title="Caption length"
                   >
                     <option value="short">Short</option>
-                    <option value="medium">Medium</option>
+                    <option value="normal">normal</option>
                     <option value="long">Long</option>
                   </select>
                 )}

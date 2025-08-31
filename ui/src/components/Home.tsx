@@ -31,7 +31,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [datasetType, setDatasetType] = useState<'detect' | 'caption'>('detect')
   const [captionItems, setCaptionItems] = useState<CaptionItem[]>([])
-  const [captionLength, setCaptionLength] = useState<'short' | 'medium' | 'long'>('short')
+  const [captionLength, setCaptionLength] = useState<'short' | 'normal' | 'long'>('short')
 
   const handleDetection = async (file: File, objects: string[], apiKey: string, stationEndpoint?: string) => {
     setIsProcessing(true)
@@ -173,12 +173,12 @@ export default function Home() {
                   <label className="text-sm">Length:</label>
                   <select
                     value={captionLength}
-                    onChange={(e) => setCaptionLength(e.target.value as 'short' | 'medium' | 'long')}
+                    onChange={(e) => setCaptionLength(e.target.value as 'short' | 'normal' | 'long')}
                     className="px-2 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                     title="Caption length"
                   >
                     <option value="short">Short</option>
-                    <option value="medium">Medium</option>
+                    <option value="normal">normal</option>
                     <option value="long">Long</option>
                   </select>
                 </div>

@@ -32,7 +32,7 @@ def create_dataset(
     - api_key: API key for Moondream cloud inference.
     - station_endpoint: URL for a local Station endpoint.
     - show_progress: Whether to show a tqdm progress bar when available.
-    - caption_length: One of "short", "medium", or "long" (caption export only).
+    - caption_length: One of "short", "normal", or "long" (caption export only).
 
     Returns:
     - Path to the dataset root that contains `images/`, `labels/` and `classes.txt`.
