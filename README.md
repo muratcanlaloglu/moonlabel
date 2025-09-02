@@ -5,6 +5,7 @@
   <p><em>Powered by <a href="https://moondream.ai/">Moondream VLM</a></em></p>
   <p>
     <a href="https://pypi.org/project/moonlabel/"><img src="https://img.shields.io/pypi/v/moonlabel.svg?logo=pypi" alt="PyPI version"></a>
+    <a href="https://pepy.tech/projects/moonlabel"><img src="https://static.pepy.tech/personalized-badge/moonlabel?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads" alt="PyPI Downloads"></a>
   </p>
 </div>
 
